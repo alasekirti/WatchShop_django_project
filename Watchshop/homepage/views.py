@@ -108,9 +108,17 @@ def addtowish(request, id):
 
 def show_wishlist(request):
     user = request.user
-    wish_object = Wishlist.objects.get(user=user)
-    return render(request, "wishlist.html", {"user_products": wish_object.products.all()})
+    wish_objects = Wishlist.objects.filter(user=user)
 
+    if wish_objects.exists():
+        user_products = []
+        for wish_object in wish_objects:
+            user_products.extend(wish_object.products.all())  # Add products from each wishlist
+        return render(request, 'wishlist.html', {'user_products': user_products})
+    else:
+        return render(request, 'wishlist.html', {'message': 'Your wishlist is empty.'})
+    
+        
 def removewish(request, id):
     product_rm = WatchesUploads.objects.get(id=id)
     wish_obj = Wishlist.objects.get(user=request.user)
