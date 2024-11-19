@@ -50,6 +50,8 @@ class uploadClass(View):
 # LOGIN
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
 from django.contrib.auth import authenticate, logout, login
+from django.contrib import messages
+
 
 def login_user(request):
     if request.method == 'POST':
@@ -108,22 +110,18 @@ def addtowish(request, id):
 
 def show_wishlist(request):
     user = request.user
-    wish_objects = Wishlist.objects.filter(user=user)
+    wish_object = Wishlist.objects.get(user=user)
+    return render(request, "wishlist.html", {"user_products": wish_object.products.all()})
 
-    if wish_objects.exists():
-        user_products = []
-        for wish_object in wish_objects:
-            user_products.extend(wish_object.products.all())  # Add products from each wishlist
-        return render(request, 'wishlist.html', {'user_products': user_products})
-    else:
-        return render(request, 'wishlist.html', {'message': 'Your wishlist is empty.'})
     
         
 def removewish(request, id):
     product_rm = WatchesUploads.objects.get(id=id)
     wish_obj = Wishlist.objects.get(user=request.user)
     wish_obj.products.remove(product_rm)
+    return redirect('home')
     return render(request, 'wishlist.html', {"user_products": wish_obj.products.all()})
+    
 
 
 #Cart
@@ -137,7 +135,7 @@ def addtocart(request, id):
     product = WatchesUploads.objects.get(id=id)
 
     #create a cart item using the product and user
-    cart_item, created = CartItem.objects.get_or_create(user = user_cart, product= product )
+    cart_item, created = CartItem.objects.get_or_create(user = user_cart, products= product)
     cart_item.product= product
     cart_item.save()
 
@@ -146,13 +144,25 @@ def addtocart(request, id):
 def show_cart(request):
     user_cart, created = Cart.objects.get_or_create(user = request.user)
     cart_objects = user_cart.cartitem_set.all()
-    return render(request, "cart.html", {"user_products": cart_objects})
+    return render(request, "cart.html", {"user_products": cart_objects.all()})
 
 def removeCart(request, id):
-    product_rm = WatchesUploads.objects.get(id=id)
-    cart_obj = Cart.objects.get(user=request.user)
-    cart_obj.products.remove(product_rm)
-    return render(request, 'cart.html', {"user_products": cart_obj.products.all()})
+    try:
+        # Fetch the product to be removed
+        product_rm = WatchesUploads.objects.get(id=id)
+
+        # Fetch the user's cart
+        cart_obj = Cart.objects.get(user=request.user)
+
+        # Find and delete the specific CartItem
+        cart_item = CartItem.objects.get(user=cart_obj, products=product_rm)
+        cart_item.delete()
+        messages.success(request, "Product removed from cart.")
+    except WatchesUploads.DoesNotExist:
+        messages.error(request, "Product does not exist.")
+    except CartItem.DoesNotExist:
+        messages.error(request, "Product not found in your cart.")
+    return redirect('home') 
     
 from django.http import JsonResponse
 def show_data(request):

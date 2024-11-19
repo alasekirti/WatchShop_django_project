@@ -37,7 +37,7 @@ class Cart(models.Model):
 
 class CartItem(models.Model):   
     user = models.ForeignKey(Cart, on_delete=models.CASCADE, null=True, blank=True)
-    product = models.ForeignKey(WatchesUploads, on_delete=models.CASCADE)
+    products = models.ForeignKey(WatchesUploads, on_delete=models.CASCADE)
     cart_count = models.IntegerField(default=1)
 
 class WatchReview(models.Model):
